@@ -62,6 +62,7 @@ import com.sk89q.worldguard.bukkit.session.BukkitSessionManager;
 import com.sk89q.worldguard.bukkit.util.ClassSourceValidator;
 import com.sk89q.worldguard.bukkit.util.Entities;
 import com.sk89q.worldguard.bukkit.util.Events;
+import com.sk89q.worldguard.bukkit.util.TaskSchedulerAdapter;
 import com.sk89q.worldguard.commands.GeneralCommands;
 import com.sk89q.worldguard.commands.ProtectionCommands;
 import com.sk89q.worldguard.commands.ToggleCommands;
@@ -106,6 +107,7 @@ public class WorldGuardPlugin extends JavaPlugin {
     private static WorldGuardPlugin inst;
     private static BukkitWorldGuardPlatform platform;
     private final CommandsManager<Actor> commands;
+    private final TaskSchedulerAdapter scheduler;
     private PlayerMoveListener playerMoveListener;
 
     private static final int BSTATS_PLUGIN_ID = 3283;
@@ -116,6 +118,7 @@ public class WorldGuardPlugin extends JavaPlugin {
      */
     public WorldGuardPlugin() {
         inst = this;
+        scheduler = new TaskSchedulerAdapter(this);
         commands = new CommandsManager<Actor>() {
             @Override
             public boolean hasPermission(Actor player, String perm) {
@@ -130,6 +133,10 @@ public class WorldGuardPlugin extends JavaPlugin {
      */
     public static WorldGuardPlugin inst() {
         return inst;
+    }
+
+    public TaskSchedulerAdapter getSchedulerAdapter() {
+        return scheduler;
     }
 
     /**
@@ -163,7 +170,7 @@ public class WorldGuardPlugin extends JavaPlugin {
             reg.register(GeneralCommands.class);
         }
 
-        getServer().getScheduler().scheduleSyncRepeatingTask(this, sessionManager, BukkitSessionManager.RUN_DELAY, BukkitSessionManager.RUN_DELAY);
+        scheduler.runGlobalRepeating(sessionManager, BukkitSessionManager.RUN_DELAY, BukkitSessionManager.RUN_DELAY);
 
         // Register events
         getServer().getPluginManager().registerEvents(sessionManager, this);
@@ -204,7 +211,7 @@ public class WorldGuardPlugin extends JavaPlugin {
         }
         worldListener.registerEvents();
 
-        Bukkit.getScheduler().runTask(this, () -> {
+        scheduler.runGlobal(() -> {
             for (Player player : Bukkit.getServer().getOnlinePlayers()) {
                 ProcessPlayerEvent event = new ProcessPlayerEvent(player);
                 Events.fire(event);
@@ -264,7 +271,7 @@ public class WorldGuardPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         WorldGuard.getInstance().disable();
-        this.getServer().getScheduler().cancelTasks(this);
+        scheduler.cancelAll();
     }
 
     @Override
