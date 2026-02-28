@@ -139,6 +139,11 @@ public class WorldGuardPlugin extends JavaPlugin {
         return scheduler;
     }
 
+    @Override
+    public void onLoad() {
+        getLogger().severe("Folia support is extremely experimental. Stability is not guaranteed.");
+    }
+
     /**
      * Called on plugin enable.
      */
